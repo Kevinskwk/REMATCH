@@ -29,7 +29,7 @@ def create_table(conn, arg):
     except Error as e:
         print(e)
 
-def create_student(conn, ID, first_name, last_name, highest=0):
+def create_user(conn, ID, first_name, last_name, highest=0):
     # Add user info into table Users
     try:
         c = conn.cursor()
@@ -40,15 +40,43 @@ def create_student(conn, ID, first_name, last_name, highest=0):
     except Error as e:
         print(e)
 
-def create_record(conn, ID, Count, Date):
+def create_record(conn, ID, Count, Year, Month, Day):
     # Add pull-up record into table Records
     try:
         c = conn.cursur()
-        stmt = '''INSERT INTO Records(ID,Count,Date)
-                VALURS(?,?,?)'''
-        c.execute(stmt,(ID,Count,Date))
+        stmt = '''INSERT INTO Records(ID,Count,Year,Month,Day)
+                VALUES(?,?,?)'''
+        c.execute(stmt,(ID,Count,Year,Month,Day))
         conn.commit
         return 1
     except Error as e:
         print(e)
         return 0
+
+def edit_user(conn, ID, first_name, last_name):
+    try:
+        c = conn.cursor()
+        stmt = '''UPDATE Users
+                set First_name = ?,
+                    Last_name = ?
+                WHERE ID = ?'''
+        c.execute(stmt, (first_name, last_name, ID))
+        conn.commit()
+    except Error as e:
+        print(e)
+
+def user_info(conn, ID):
+    try:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        stmt = '''SELECT * FROM Users WHERE ID=?'''
+        c.execute(stmt,(ID,))
+        #c.commit()
+        rows = c.fetchall()
+        info={}
+        for row in rows:
+            info.update(dict(row))
+        return info
+    except Error as e:
+        print(e)
+        
