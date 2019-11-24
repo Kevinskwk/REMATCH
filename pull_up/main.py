@@ -40,14 +40,19 @@ def display(number):
 
 def main():
     while True:
-        count = 0
-        while read_ID():
-            ID = read_ID()
-            if read_sensor():
-                count +=1
-                display(count)
-        print(ID, count)
-            
+        try:       
+            count = 0
+            while read_ID():
+                ID = read_ID()
+                while read_ID() == ID:
+                    if read_sensor():
+                        count +=1
+                        display(count)
+                date = time.localtime()[0:3]
+                print(ID, count, date[0], date[1], date[2])
+                count = 0
+        except KeyboardInterrupt:
+            break
+ 
 if __name__ == "__main__":
     main()
-    
