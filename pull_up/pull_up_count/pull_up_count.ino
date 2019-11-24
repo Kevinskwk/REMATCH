@@ -1,3 +1,6 @@
+//This programme uses Bifrost library for hcsr04 ultrasonic sensor
+//Please go to Tools -> Manage Libraries and install this library before uploading
+
 #include <hcsr04.h>
 
 #define NUM 2
@@ -15,6 +18,7 @@ HCSR04 sensor[NUM] = {
   HCSR04(5, 4, MIN_DISTANCE, MAX_DISTANCE)
 };
 
+
 void setup() {
   pinMode(LED, OUTPUT);
   Serial.begin(9600);
@@ -24,9 +28,8 @@ void loop() {
   //update_distance();
   //Serial.println(distance[0]);
   //Serial.println(distance[1]);
-
   if (debounce() && !cooldown) {
-    Serial.println("ONE");
+    Serial.write(1);
     cooldown = true;
     digitalWrite(LED, HIGH);
   }
@@ -46,12 +49,12 @@ void update_distance() {
 bool debounce(){
   update_distance();
   for (uint8_t i = 0; i < NUM; i++) {
-    if (distance[i] > 500) return false;
+    if (distance[i] > LIMIT) return false;
   }
   delay(50);
   update_distance();
   for (uint8_t i = 0; i < NUM; i++) {
-    if (distance[i] > 500) return false;
+    if (distance[i] > LIMIT) return false;
   }
   return true;
 }
@@ -60,12 +63,12 @@ bool debounce(){
 bool debounce_inverted(){
   update_distance();
   for (uint8_t i = 0; i < NUM; i++) {
-    if (distance[i] <= 500) return false;
+    if (distance[i] <= LIMIT) return false;
   }
   delay(50);
   update_distance();
   for (uint8_t i = 0; i < NUM; i++) {
-    if (distance[i] <= 500) return false;
+    if (distance[i] <= LIMIT) return false;
   }
   return true;
 }
