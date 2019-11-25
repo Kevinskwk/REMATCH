@@ -19,7 +19,8 @@ create_table(conn, '''Users (
                     ID integer PRIMARY KEY,
                     First_name text NOT NULL,
                     Last_name text,
-                    Highest_score integer);''')
+                    Highest integer,
+                    Total integer);''')
 print("Created table Users")
 
 # create records table
