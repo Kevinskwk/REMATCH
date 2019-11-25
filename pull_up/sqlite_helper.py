@@ -92,3 +92,39 @@ def update_score(conn, ID, count):
         c.commit()
     except Error as e:
         print(e)
+
+def sort_highest(conn):
+    try:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        stmt = '''SELECT ID, First_name, Highest
+                FROM Users
+                ORDER BY Highest DESC
+                '''
+        c.execute(stmt)
+        #c.commit()
+        rows = c.fetchall()
+        info=[]
+        for row in rows:
+            info.append(dict(row))
+        return info
+    except Error as e:
+        print(e)
+
+def sort_total(conn):
+    try:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        stmt = '''SELECT ID, First_name, Total
+                FROM Users
+                ORDER BY Total DESC
+                '''
+        c.execute(stmt)
+        #c.commit()
+        rows = c.fetchall()
+        info=[]
+        for row in rows:
+            info.append(dict(row))
+        return info
+    except Error as e:
+        print(e)
