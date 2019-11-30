@@ -2,7 +2,7 @@
 import serial
 import logging
 import time
-from sqlite_helper import create_connection, create_record
+from sqlite_helper import create_connection, create_record, update_score
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -49,7 +49,9 @@ def main():
                         count +=1
                         display(count)
                 date = time.localtime()[0:3]
-                print(ID, count, date[0], date[1], date[2])
+                print(ID, count, date)
+                update_score(conn, ID, count)
+                create_record(conn, ID, count, date)
                 count = 0
         except KeyboardInterrupt:
             break
