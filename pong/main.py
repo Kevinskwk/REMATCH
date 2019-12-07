@@ -3,10 +3,10 @@ import pygame
 from paddle import Paddle
 from ball import Ball
 import sys
-# import serial
+import serial
 
-#encoder = serial.Serial('/dev/ttyACM0',9600)
-#encoder.flushInput()
+encoder = serial.Serial('/dev/ttyACM0',9600)
+encoder.flushInput()
 
 pygame.init()
  
@@ -24,7 +24,7 @@ paddleA.rect.x = 20
 paddleA.rect.y = 300
  
 paddleB = Paddle(WHITE, 10, 100)
-paddleB.rect.x = 1270
+paddleB.rect.x = 1260
 paddleB.rect.y = 300
  
 ball = Ball(WHITE,10,10)
@@ -48,6 +48,7 @@ clock = pygame.time.Clock()
 #Initialise player scores
 scoreA = 0
 scoreB = 0
+#prev = 0
  
 # -------- Main Program Loop -----------
 while carryOn:
@@ -60,28 +61,27 @@ while carryOn:
                      carryOn=False
 
     #Moving the paddles when the use uses the arrow keys (player A) or "W/S" keys (player B)
-    '''
-    if encoder.inWaiting:
+    if encoder.inWaiting() > 0:
         cmd = ord(encoder.read(1))
-        if cmd[0] == 1:
-            paddleA.moveUp(15)
-        if cmd[0] == 2:
-            paddleA.moveDown(15)
-        if cmd[1] == 1:
+        if cmd == 1:
             paddleB.moveUp(15)
-        if cmd[1] == 2:
+        if cmd == 2:
             paddleB.moveDown(15)
-    '''
+        if cmd == 3:
+            paddleA.moveUp(15)
+        if cmd == 4:
+            paddleA.moveDown(15)
+
     keys = pygame.key.get_pressed()
     if keys[pygame.K_w]:
         paddleA.moveUp(15)
     if keys[pygame.K_s]:
         paddleA.moveDown(15)
     if keys[pygame.K_UP]:
-        paddleB.moveUp(15)
+        paddleA.moveUp(15)
     if keys[pygame.K_DOWN]:
-        paddleB.moveDown(15)    
- 
+        paddleA.moveDown(15)
+
     # --- Game logic should go here
     all_sprites_list.update()
     
