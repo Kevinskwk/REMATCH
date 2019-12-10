@@ -3,11 +3,12 @@ import pygame
 from paddle import Paddle
 from ball import Ball
 import sys
-import serial
+import smbus
 
 try:
-    encoder = serial.Serial('/dev/ttyACM0',9600)
-    encoder.flushInput()
+    ADDRESS1 = 0x04
+    ADDRESS2 = 0x05
+    I2Cbus = smbus.SMBus(1)
     withEncoder = True
 except:
     withEncoder = False
@@ -27,6 +28,7 @@ paddle_width = 10
 paddle_height = 100
 ball_size = 10
 paddle_speed = 10
+ball_speed = 10
 font_size = 45
 
 # Open a new window
@@ -42,7 +44,7 @@ paddleB = Paddle(BLUE, paddle_width, paddle_height, height)
 paddleB.rect.x = width-3*paddle_width
 paddleB.rect.y = (height-paddle_height)//2
 
-ball = Ball(WHITE,ball_size,ball_size)
+ball = Ball(WHITE,ball_size,ball_size,ball_speed)
 ball.rect.x = (width-ball_size)//2
 ball.rect.y = (height-ball_size)//2
 
@@ -60,16 +62,16 @@ scoreB = 10
 
 def movePaddle():
     if withEncoder:
-        if encoder.inWaiting() > 0:
-            cmd = ord(encoder.read(1))
-            if cmd == 1:
-                paddleB.moveUp(paddle_speed)
-            if cmd == 2:
-                paddleB.moveDown(paddle_speed)
-            if cmd == 3:
-                paddleA.moveUp(paddle_speed)
-            if cmd == 4:
-                paddleA.moveDown(paddle_speed)
+        cmd1 = I2Cbus.read_byte(ADDRESS1)
+        cmd2 = I2Cbus.read_byte(ADDRESS2)
+        if cmd1 <= 127:
+            paddleA.moveUp(cmd1*paddle_speed)
+        if cmd1 >= 128:
+            paddleA.moveDown((256-cmd1)*paddle_speed)
+        if cmd2 <= 127:
+            paddleB.moveUp(cmd2*paddle_speed)
+        if cmd2 >= 128:
+            paddleB.moveDown((256-cmd2)*paddle_speed)
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_w]:
@@ -86,16 +88,21 @@ def reset():
     paddleB.rect.y = (height-paddle_height)//2
     ball.rect.x = (width-ball_size)//2
     ball.rect.y = (height-ball_size)//2
+    ball.reset()
     pygame.time.delay(1000)
-
+    I2Cbus.read_byte(ADDRESS1)
+    I2Cbus.read_byte(ADDRESS2) #reset encoders
 def rematch():
     global scoreA, scoreB
     paddleA.rect.y = (height-paddle_height)//2
     paddleB.rect.y = (height-paddle_height)//2
     ball.rect.x = (width-ball_size)//2
     ball.rect.y = (height-ball_size)//2
+    ball.reset()
     scoreA = 0
     scoreB = 0
+    I2Cbus.read_byte(ADDRESS1)
+    I2Cbus.read_byte(ADDRESS2) #reset encoders
     game()
 
 def display_score(scoreA, scoreB):
