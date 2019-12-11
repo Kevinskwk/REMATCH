@@ -4,7 +4,7 @@ from paddle import Paddle
 from ball import Ball
 import sys
 import smbus
-import PRi.GPIO as GPIO
+import RPi.GPIO as GPIO
 
 # Set up
 pygame.init()
@@ -97,6 +97,7 @@ def movePaddle():
         paddleB.moveDown(paddle_speed)
 
 def button1_pushed():
+    global CD1
     if GPIO.input(BUTTON1) == 1 and CD1 == False:
         CD1 = True
         return True
@@ -104,6 +105,7 @@ def button1_pushed():
         return False
 
 def button2_pushed():
+    global CD2
     if GPIO.input(BUTTON2) == 1 and CD2 == False:
         CD2 = True
         return True
@@ -111,6 +113,7 @@ def button2_pushed():
         return False
 
 def button_refresh():
+    global CD1, CD2
     if GPIO.input(BUTTON1) == 0:
         CD1 = False
     if GPIO.input(BUTTON2) == 0:
