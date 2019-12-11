@@ -20,7 +20,7 @@ class Ball(pygame.sprite.Sprite):
         # Draw the ball (a rectangle!)
         pygame.draw.rect(self.image, color, [0, 0, width, height])
         
-        self.velocity = [randint(self.speed,3*self.speed//2),randint(-self.speed,*self.speed)]
+        self.velocity = [randint(self.speed,3*self.speed//2),randint(-self.speed,self.speed)]
         
         # Fetch the rectangle object that has the dimensions of the image.
         self.rect = self.image.get_rect()
