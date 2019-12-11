@@ -34,4 +34,4 @@ class Ball(pygame.sprite.Sprite):
         self.velocity[1] = randint(-self.speed,self.speed)
 
     def reset(self):
-        self.velocity = [randint(self.speed,3*self.speed//2),randint(-self.speed,*self.speed)]
+        self.velocity = [randint(self.speed,3*self.speed//2),randint(-self.speed,self.speed)]
