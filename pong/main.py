@@ -97,14 +97,14 @@ def movePaddle():
         paddleB.moveDown(paddle_speed)
 
 def button1_pushed():
-    if GPIO.input(BUTTON1) == 1 and CD1 = False:
+    if GPIO.input(BUTTON1) == 1 and CD1 == False:
         CD1 = True
         return True
     else:
         return False
 
 def button2_pushed():
-    if GPIO.input(BUTTON2) == 1 and CD2 = False:
+    if GPIO.input(BUTTON2) == 1 and CD2 == False:
         CD2 = True
         return True
     else:
@@ -232,12 +232,12 @@ def menu(ready=0):
             rematch()
 
         if button1_pushed():
-            if p1 = False:
+            if p1 == False:
                 p1 = True
             else:
                 p1 = False
         if button2_pushed():
-            if p2 = False:
+            if p2 == False:
                 p2 = True
             else:
                 p2 = False
@@ -282,11 +282,11 @@ def menu(ready=0):
 
         if p1:
             font = pygame.font.Font('assets/kongtext.ttf', 54)
-            text = front.render("P1 Ready!", 1 , RED)
+            text = font.render("P1 Ready!", 1 , RED)
             screen.blit(text, (width//5,height*3//4))
         if p2:
             font = pygame.font.Font('assets/kongtext.ttf', 54)
-            text = front.render("P2 Ready!", 1 , BLUE)
+            text = font.render("P2 Ready!", 1 , BLUE)
             screen.blit(text, (width*4//5-text.get_width()//2,height*3//4))
         
         pygame.display.flip()
@@ -362,7 +362,7 @@ def game():
             font = pygame.font.Font('assets/kongtext.ttf', 72)
             text = font.render("press any button to continue", 1, WHITE)
             screen.blit(text, ((width-text.get_width())//2,height*2//3))
-            
+
         #Draw the net
         pygame.draw.line(screen, WHITE, [width//2, 0], [width//2, height], 5)
         
