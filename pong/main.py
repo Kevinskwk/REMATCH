@@ -16,13 +16,13 @@ RED = (255,0,0)
 BLUE = (0,0,255)
 
 # Define some constant
-width = 1200
-height = 800
-paddle_width = 10
-paddle_height = 100
+width = 1920
+height = 1080
+paddle_width = 15
+paddle_height = 150
 ball_size = 10
-paddle_speed = 10
-ball_speed = 10
+paddle_speed = 15
+ball_speed = 20
 font_size = 45
 ADDRESS1 = 0x04
 ADDRESS2 = 0x05
@@ -161,6 +161,7 @@ def check_win(scoreA, scoreB):
 def finish(winner):
     FINISH = True
     clock = pygame.time.Clock()
+    global CD1, CD2
 
     while FINISH:
         for event in pygame.event.get(): # User did something
@@ -170,6 +171,7 @@ def finish(winner):
                     if event.key==pygame.K_x: #Pressing the x Key will quit the game
                         FINISH=False
 
+        button_refresh()
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE]:
             FINISH = False
@@ -184,8 +186,6 @@ def finish(winner):
         if button2_pushed():
             FINISH = False
             menu(ready=2)
-
-        screen.fill(BLACK)
 
         # display text
         if winner == 'A':
@@ -207,7 +207,6 @@ def finish(winner):
 
 
         pygame.display.flip()
-        button_refresh
         clock.tick(60)
 
 def menu(ready=0):
@@ -215,6 +214,7 @@ def menu(ready=0):
     clock = pygame.time.Clock()
     p1 = True if ready ==1 else False
     p2 = True if ready ==2 else False
+    global CD1, CD2
 
     while MENU:
         for event in pygame.event.get(): # User did something
@@ -223,7 +223,7 @@ def menu(ready=0):
             elif event.type==pygame.KEYDOWN:
                     if event.key==pygame.K_x: #Pressing the x Key will quit the game
                         MENU=False
-
+        button_refresh()
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE]:
             MENU = False
@@ -232,6 +232,8 @@ def menu(ready=0):
         if p1 and p2:
             MENU = False
             pygame.time.delay(1000)
+            p1 = False
+            p2 = False
             rematch()
 
         if button1_pushed():
@@ -276,12 +278,12 @@ def menu(ready=0):
         all_sprites_list.draw(screen)
 
         # write text
-        font = pygame.font.Font('assets/kongtext.ttf', 144)
+        font = pygame.font.Font('assets/kongtext.ttf', 108)
         text = font.render("PONG!", 1, WHITE)
         screen.blit(text, ((width-text.get_width())//2,height//3))
-        font = pygame.font.Font('assets/kongtext.ttf', 72)
+        font = pygame.font.Font('assets/kongtext.ttf', 54)
         text = font.render("Press button to start", 1, WHITE)
-        screen.blit(text, ((width-text.get_width())//2,height*2//3))
+        screen.blit(text, ((width-text.get_width())//2,height*2//3-text.get_height()))
 
         if p1:
             font = pygame.font.Font('assets/kongtext.ttf', 54)
@@ -290,10 +292,9 @@ def menu(ready=0):
         if p2:
             font = pygame.font.Font('assets/kongtext.ttf', 54)
             text = font.render("P2 Ready!", 1 , BLUE)
-            screen.blit(text, (width*4//5-text.get_width()//2,height*3//4))
+            screen.blit(text, (width*4//5-text.get_width(),height*3//4))
         
         pygame.display.flip()
-        button_refresh()
         clock.tick(60)
         
 
@@ -302,7 +303,7 @@ def game():
     carryOn = True
     PAUSE = False
 
-    global scoreA, scoreB
+    global scoreA, scoreB, CD1, CD2
     # The clock will be used to control how fast the screen updates
     clock = pygame.time.Clock()
        
@@ -316,15 +317,14 @@ def game():
             elif event.type==pygame.KEYDOWN:
                     if event.key==pygame.K_x: #Pressing the x Key will quit the game
                         carryOn=False
-    
-        if button1_pushed() or button2_pushed():
-            PAUSE = True
         
         if PAUSE:
             if button1_pushed() or button2_pushed():
                 PAUSE = False
         
         else:
+            if button1_pushed() or button2_pushed():
+                PAUSE = True
             movePaddle()
             # --- Game logic should go here
             all_sprites_list.update()
@@ -359,10 +359,10 @@ def game():
         screen.fill(BLACK)
 
         if PAUSE:
-            font = pygame.font.Font('assets/kongtext.ttf', 144)
+            font = pygame.font.Font('assets/kongtext.ttf', 96)
             text = font.render("PAUSE", 1, WHITE)
             screen.blit(text, ((width-text.get_width())//2,height//3))
-            font = pygame.font.Font('assets/kongtext.ttf', 72)
+            font = pygame.font.Font('assets/kongtext.ttf', 48)
             text = font.render("press any button to continue", 1, WHITE)
             screen.blit(text, ((width-text.get_width())//2,height*2//3))
 
@@ -387,7 +387,7 @@ def game():
             reset()
 
         # --- Limit to 60 frames per second
-        button_refresh
+        button_refresh()
         clock.tick(60)
     
     #Once we have exited the main program loop we can stop the game engine:
