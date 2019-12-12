@@ -21,13 +21,15 @@ height = 1080
 paddle_width = 15
 paddle_height = 150
 ball_size = 10
-paddle_speed = 15
+paddle_speed = 8
 ball_speed = 20
 font_size = 45
 ADDRESS1 = 0x04
 ADDRESS2 = 0x05
 BUTTON1 = 4
 BUTTON2 = 14
+LEDRED = 15
+LEDBLUE = 18
 
 try:
     I2Cbus = smbus.SMBus(1)
@@ -41,6 +43,10 @@ GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(BUTTON1, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 GPIO.setup(BUTTON2, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(LEDRED, GPIO.OUT)
+GPIO.setup(LEDBLUE, GPIO.OUT)
+GPIO.output(LEDRED, 0)
+GPIO.output(LEDBLUE, 0)
 CD1 = False
 CD2 = False
 
@@ -75,16 +81,19 @@ scoreB = 10
 
 def movePaddle():
     if withEncoder:
-        cmd1 = I2Cbus.read_byte(ADDRESS1)
-        cmd2 = I2Cbus.read_byte(ADDRESS2)
-        if cmd1 <= 127:
-            paddleA.moveUp(cmd1*paddle_speed)
-        if cmd1 >= 128:
-            paddleA.moveDown((256-cmd1)*paddle_speed)
-        if cmd2 <= 127:
-            paddleB.moveUp(cmd2*paddle_speed)
-        if cmd2 >= 128:
-            paddleB.moveDown((256-cmd2)*paddle_speed)
+        try:
+            cmd1 = I2Cbus.read_byte(ADDRESS1)
+            cmd2 = I2Cbus.read_byte(ADDRESS2)
+            if cmd1 <= 127:
+                paddleA.moveUp(cmd1*paddle_speed)
+            if cmd1 >= 128:
+                paddleA.moveDown((256-cmd1)*paddle_speed)
+            if cmd2 <= 127:
+                paddleB.moveUp(cmd2*paddle_speed)
+            if cmd2 >= 128:
+                paddleB.moveDown((256-cmd2)*paddle_speed)
+        except:
+            pass
 
     keys = pygame.key.get_pressed()
     if keys[pygame.K_w]:
@@ -126,8 +135,11 @@ def reset():
     ball.rect.y = (height-ball_size)//2
     ball.reset()
     pygame.time.delay(1000)
-    I2Cbus.read_byte(ADDRESS1)
-    I2Cbus.read_byte(ADDRESS2) #reset encoders
+    try:
+        I2Cbus.read_byte(ADDRESS1)
+        I2Cbus.read_byte(ADDRESS2) #reset encoders
+    except:
+        reset()
 
 def rematch():
     global scoreA, scoreB
@@ -138,8 +150,11 @@ def rematch():
     ball.reset()
     scoreA = 0
     scoreB = 0
-    I2Cbus.read_byte(ADDRESS1)
-    I2Cbus.read_byte(ADDRESS2) #reset encoders
+    try:
+        I2Cbus.read_byte(ADDRESS1)
+        I2Cbus.read_byte(ADDRESS2) #reset encoders
+    except:
+        rematch()
     game()
 
 def display_score(scoreA, scoreB):
@@ -189,10 +204,12 @@ def finish(winner):
 
         # display text
         if winner == 'A':
+            GPIO.output(LEDRED, 1)
             font = pygame.font.Font('assets/kongtext.ttf', 144)
             text = font.render("RED WIN!", 1, RED)
             screen.blit(text, ((width-text.get_width())//2,height//3))
         elif winner == 'B':
+            GPIO.output(LEDBLUE, 1)
             font = pygame.font.Font('assets/kongtext.ttf', 144)
             text = font.render("BLUE WIN!", 1, BLUE)
             screen.blit(text, ((width-text.get_width())//2,height//3))
@@ -210,6 +227,8 @@ def finish(winner):
         clock.tick(60)
 
 def menu(ready=0):
+    GPIO.output(LEDRED, 0)
+    GPIO.output(LEDBLUE, 0)
     MENU = True
     clock = pygame.time.Clock()
     p1 = True if ready ==1 else False
@@ -302,7 +321,8 @@ def game():
     # The loop will carry on until the user exit the game (e.g. clicks the close button).
     carryOn = True
     PAUSE = False
-
+    GPIO.output(LEDRED, 0)
+    GPIO.output(LEDBLUE, 0)
     global scoreA, scoreB, CD1, CD2
     # The clock will be used to control how fast the screen updates
     clock = pygame.time.Clock()
@@ -392,6 +412,7 @@ def game():
     
     #Once we have exited the main program loop we can stop the game engine:
     pygame.quit()
+    GPIO.cleanup()
 
 if __name__ == '__main__':
     menu()
