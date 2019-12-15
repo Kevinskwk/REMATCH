@@ -3,8 +3,15 @@ import pygame
 from paddle import Paddle
 from ball import Ball
 import sys
-import smbus
-import RPi.GPIO as GPIO
+
+# try imprting rpi libraries, else run desktop mode
+try:
+    import smbus
+    import RPi.GPIO as GPIO
+    RPI = True
+except:
+    RPI = False
+    withEncoder = False
 
 # Set up
 pygame.init()
@@ -15,7 +22,7 @@ WHITE = (255,255,255)
 RED = (255,0,0)
 BLUE = (0,0,255)
 
-# Define some constant
+# Define some constants
 width = 1920
 height = 1080
 paddle_width = 15
@@ -23,7 +30,9 @@ paddle_height = 150
 ball_size = 10
 paddle_speed = 8
 ball_speed = 20
-font_size = 45
+friction = 10
+
+# Define i2c addresses and RPi GPIOs
 ADDRESS1 = 0x04
 ADDRESS2 = 0x05
 BUTTON1 = 4
@@ -31,22 +40,26 @@ BUTTON2 = 14
 LEDRED = 15
 LEDBLUE = 18
 
-try:
-    I2Cbus = smbus.SMBus(1)
-    I2Cbus.read_byte(ADDRESS1)
-    I2Cbus.read_byte(ADDRESS2)
-    withEncoder = True
-except:
-    withEncoder = False
+# RPI set up
+if RPI:
+    try:
+        I2Cbus = smbus.SMBus(1)
+        I2Cbus.read_byte(ADDRESS1)
+        I2Cbus.read_byte(ADDRESS2)
+        withEncoder = True
+    except:
+        withEncoder = False
 
-GPIO.setwarnings(False)
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(BUTTON1, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(BUTTON2, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(LEDRED, GPIO.OUT)
-GPIO.setup(LEDBLUE, GPIO.OUT)
-GPIO.output(LEDRED, 0)
-GPIO.output(LEDBLUE, 0)
+    GPIO.setwarnings(False)
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(BUTTON1, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(BUTTON2, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(LEDRED, GPIO.OUT)
+    GPIO.setup(LEDBLUE, GPIO.OUT)
+    GPIO.output(LEDRED, 0)
+    GPIO.output(LEDBLUE, 0)
+
+# cool down for buttons
 CD1 = False
 CD2 = False
 
@@ -55,6 +68,7 @@ size = (width, height)
 screen = pygame.display.set_mode(size)
 pygame.display.set_caption("Pong")
 
+# create paddles
 paddleA = Paddle(RED, paddle_width, paddle_height, height)
 paddleA.rect.x = 2*paddle_width
 paddleA.rect.y = (height-paddle_height)//2
@@ -63,6 +77,7 @@ paddleB = Paddle(BLUE, paddle_width, paddle_height, height)
 paddleB.rect.x = width-3*paddle_width
 paddleB.rect.y = (height-paddle_height)//2
 
+#create ball
 ball = Ball(WHITE,ball_size,ball_size,ball_speed)
 ball.rect.x = (width-ball_size)//2
 ball.rect.y = (height-ball_size)//2
@@ -70,15 +85,16 @@ ball.rect.y = (height-ball_size)//2
 #This will be a list that will contain all the sprites we intend to use in our game.
 all_sprites_list = pygame.sprite.Group()
 
-# Add the car to the list of objects
+# Add the paddles and ball to the list of objects
 all_sprites_list.add(paddleA)
 all_sprites_list.add(paddleB)
 all_sprites_list.add(ball) 
 
 #Initialise player scores
 scoreA = 0
-scoreB = 10
+scoreB = 0
 
+# Function to move the paddles
 def movePaddle():
     if withEncoder:
         try:
@@ -105,29 +121,39 @@ def movePaddle():
     if keys[pygame.K_DOWN]:
         paddleB.moveDown(paddle_speed)
 
+# Functions to detect if the buttons are pushed
 def button1_pushed():
-    global CD1
-    if GPIO.input(BUTTON1) == 1 and CD1 == False:
-        CD1 = True
-        return True
+    if RPI:
+        global CD1
+        if GPIO.input(BUTTON1) == 1 and CD1 == False:
+            CD1 = True
+            return True
+        else:
+            return False
     else:
         return False
 
 def button2_pushed():
-    global CD2
-    if GPIO.input(BUTTON2) == 1 and CD2 == False:
-        CD2 = True
-        return True
+    if RPI:
+        global CD2
+        if GPIO.input(BUTTON2) == 1 and CD2 == False:
+            CD2 = True
+            return True
+        else:
+            return False
     else:
         return False
 
+# Function to refresh buttons cooldown
 def button_refresh():
-    global CD1, CD2
-    if GPIO.input(BUTTON1) == 0:
-        CD1 = False
-    if GPIO.input(BUTTON2) == 0:
-        CD2 = False
+    if RPI:
+        global CD1, CD2
+        if GPIO.input(BUTTON1) == 0:
+            CD1 = False
+        if GPIO.input(BUTTON2) == 0:
+            CD2 = False
 
+# Function to reset the game
 def reset():
     paddleA.rect.y = (height-paddle_height)//2
     paddleB.rect.y = (height-paddle_height)//2
@@ -135,12 +161,14 @@ def reset():
     ball.rect.y = (height-ball_size)//2
     ball.reset()
     pygame.time.delay(1000)
-    try:
-        I2Cbus.read_byte(ADDRESS1)
-        I2Cbus.read_byte(ADDRESS2) #reset encoders
-    except:
-        reset()
+    if withEncoder:
+        try:
+            I2Cbus.read_byte(ADDRESS1)
+            I2Cbus.read_byte(ADDRESS2) #reset encoders
+        except:
+            reset()
 
+# Function to start a new game
 def rematch():
     global scoreA, scoreB
     paddleA.rect.y = (height-paddle_height)//2
@@ -150,21 +178,21 @@ def rematch():
     ball.reset()
     scoreA = 0
     scoreB = 0
-    try:
-        I2Cbus.read_byte(ADDRESS1)
-        I2Cbus.read_byte(ADDRESS2) #reset encoders
-    except:
-        rematch()
+    if withEncoder:
+        try:
+            I2Cbus.read_byte(ADDRESS1)
+            I2Cbus.read_byte(ADDRESS2) #reset encoders
+        except:
+            rematch()
     game()
 
-def display_score(scoreA, scoreB):
-    #Display scores:
-    font = pygame.font.Font('assets/kongtext.ttf', font_size)
-    text = font.render(str(scoreA), 1, WHITE)
-    screen.blit(text, (width//3,height//50))
-    text = font.render(str(scoreB), 1, WHITE)
-    screen.blit(text, (2*width//3-text.get_width(),height//50))
+# Function to get text
+def get_text(size, string, colour):
+    font = pygame.font.Font('assets/kongtext.ttf', size)
+    text = font.render(string, 1, colour)
+    return text
 
+# Function to check if the game has a winner
 def check_win(scoreA, scoreB):
     if scoreA >= 6 and scoreA-scoreB >= 2:
         return 'A'
@@ -173,20 +201,24 @@ def check_win(scoreA, scoreB):
     else:
         return False
 
+# Finishing page
 def finish(winner):
     FINISH = True
     clock = pygame.time.Clock()
     global CD1, CD2
 
     while FINISH:
-        for event in pygame.event.get(): # User did something
-            if event.type == pygame.QUIT: # If user clicked close
-                FINISH = False # Flag that we are done so we exit this loop
+        # Check quiting 
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                FINISH = False
             elif event.type==pygame.KEYDOWN:
-                    if event.key==pygame.K_x: #Pressing the x Key will quit the game
+                    if event.key==pygame.K_x:
                         FINISH=False
+        if RPI:
+            button_refresh()
 
-        button_refresh()
+        # check rematch and escape
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE]:
             FINISH = False
@@ -195,40 +227,43 @@ def finish(winner):
             FINISH = False
             menu()
 
-        if button1_pushed():
-            FINISH = False
-            menu(ready=1)
-        if button2_pushed():
-            FINISH = False
-            menu(ready=2)
+        if RPI:
+            if button1_pushed():
+                FINISH = False
+                menu(ready=1)
+            if button2_pushed():
+                FINISH = False
+                menu(ready=2)
 
         # display text
         if winner == 'A':
-            GPIO.output(LEDRED, 1)
-            font = pygame.font.Font('assets/kongtext.ttf', 144)
-            text = font.render("RED WIN!", 1, RED)
-            screen.blit(text, ((width-text.get_width())//2,height//3))
+            text = get_text(144,"RED WINS!", RED)
+            if RPI:
+                GPIO.output(LEDRED, 1)       
         elif winner == 'B':
-            GPIO.output(LEDBLUE, 1)
-            font = pygame.font.Font('assets/kongtext.ttf', 144)
-            text = font.render("BLUE WIN!", 1, BLUE)
-            screen.blit(text, ((width-text.get_width())//2,height//3))
+            text = get_text(144,"BLUE WINS!", BLUE)
+            if RPI:
+                GPIO.output(LEDBLUE, 1)      
+        screen.blit(text, ((width-text.get_width())//2,height//3))
 
         # display instructions
-        font = pygame.font.Font('assets/kongtext.ttf', 108)
-        text = font.render("REMATCH?", 1, WHITE)
+        text = get_text(108, "REMATCH?", WHITE)
         screen.blit(text, ((width-text.get_width())//2,height*2//3))
-        font = pygame.font.Font('assets/kongtext.ttf', 54)
-        text = font.render("Press button!", 1, WHITE)
+        if RPI:
+            text = get_text(54, "Press button!", WHITE)
+        else:
+            text = get_text(54, "Press space!", WHITE)
         screen.blit(text, ((width-text.get_width())//2,height*2//3+2*text.get_height()))
-
 
         pygame.display.flip()
         clock.tick(60)
 
+# Menu page
 def menu(ready=0):
-    GPIO.output(LEDRED, 0)
-    GPIO.output(LEDBLUE, 0)
+    if RPI:
+        GPIO.output(LEDRED, 0)
+        GPIO.output(LEDBLUE, 0)
+    
     MENU = True
     clock = pygame.time.Clock()
     p1 = True if ready ==1 else False
@@ -236,13 +271,16 @@ def menu(ready=0):
     global CD1, CD2
 
     while MENU:
-        for event in pygame.event.get(): # User did something
-            if event.type == pygame.QUIT: # If user clicked close
-                MENU = False # Flag that we are done so we exit this loop
+        # Check quiting
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                MENU = False
             elif event.type==pygame.KEYDOWN:
-                    if event.key==pygame.K_x: #Pressing the x Key will quit the game
+                    if event.key==pygame.K_x:
                         MENU=False
+            
         button_refresh()
+
         keys = pygame.key.get_pressed()
         if keys[pygame.K_SPACE]:
             MENU = False
@@ -285,7 +323,7 @@ def menu(ready=0):
     
         #Detect collisions between the ball and the paddles
         if pygame.sprite.collide_mask(ball, paddleA) or pygame.sprite.collide_mask(ball, paddleB):
-            ball.bounce()
+            ball.bounce(rand=True)
 
         screen.fill(BLACK)
         
@@ -297,11 +335,9 @@ def menu(ready=0):
         all_sprites_list.draw(screen)
 
         # write text
-        font = pygame.font.Font('assets/kongtext.ttf', 108)
-        text = font.render("PONG!", 1, WHITE)
+        text = get_text(108, "PONG!", WHITE)
         screen.blit(text, ((width-text.get_width())//2,height//3))
-        font = pygame.font.Font('assets/kongtext.ttf', 54)
-        text = font.render("Press button to start", 1, WHITE)
+        text = get_text(54, "Press button to start", WHITE)
         screen.blit(text, ((width-text.get_width())//2,height*2//3-text.get_height()))
 
         if p1:
@@ -316,13 +352,13 @@ def menu(ready=0):
         pygame.display.flip()
         clock.tick(60)
         
-
+# The main game loop
 def game():
-    # The loop will carry on until the user exit the game (e.g. clicks the close button).
     carryOn = True
     PAUSE = False
-    GPIO.output(LEDRED, 0)
-    GPIO.output(LEDBLUE, 0)
+    if RPI:
+        GPIO.output(LEDRED, 0)
+        GPIO.output(LEDBLUE, 0)
     global scoreA, scoreB, CD1, CD2
     # The clock will be used to control how fast the screen updates
     clock = pygame.time.Clock()
@@ -331,17 +367,22 @@ def game():
     while carryOn:
         RESET = False
         # --- Main event loop
-        for event in pygame.event.get(): # User did something
-            if event.type == pygame.QUIT: # If user clicked close
-                carryOn = False # Flag that we are done so we exit this loop
+        # Check quiting
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                carryOn = False
             elif event.type==pygame.KEYDOWN:
-                    if event.key==pygame.K_x: #Pressing the x Key will quit the game
+                    if event.key==pygame.K_x:
                         carryOn=False
         
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_ESCAPE]:
+            carryOn = False
+            menu()
+
         if PAUSE:
             if button1_pushed() or button2_pushed():
                 PAUSE = False
-        
         else:
             if button1_pushed() or button2_pushed():
                 PAUSE = True
@@ -371,13 +412,24 @@ def game():
                 ball.velocity[1] = -ball.velocity[1]     
         
             #Detect collisions between the ball and the paddles
-            if pygame.sprite.collide_mask(ball, paddleA) or pygame.sprite.collide_mask(ball, paddleB):
-                ball.bounce()
+            if withEncoder:
+                if pygame.sprite.collide_mask(ball, paddleA):
+                    v = I2Cbus.read_byte(ADDRESS1)
+                    v = v if v <= 127 else 256-v
+                elif pygame.sprite.collide_mask(ball, paddleB):
+                    v = I2Cbus.read_byte(ADDRESS2)
+                    v = v if v <= 127 else 256-v
+                ball.bounce(k=friction, spin=v)
+
+            else:
+                if pygame.sprite.collide_mask(ball, paddleA) or pygame.sprite.collide_mask(ball, paddleB):
+                    ball.bounce(rand=True)
         
         # --- Drawing code should go here
         # First, clear the screen to black. 
         screen.fill(BLACK)
 
+        # Draw pause page
         if PAUSE:
             font = pygame.font.Font('assets/kongtext.ttf', 96)
             text = font.render("PAUSE", 1, WHITE)
@@ -386,13 +438,17 @@ def game():
             text = font.render("press any button to continue", 1, WHITE)
             screen.blit(text, ((width-text.get_width())//2,height*2//3))
 
-        #Draw the net
+        # Draw the net
         pygame.draw.line(screen, WHITE, [width//2, 0], [width//2, height], 5)
         
-        #Now let's draw all the sprites in one go. (For now we only have 2 sprites!)
+        # Draw all the sprites in one go
         all_sprites_list.draw(screen) 
 
-        display_score(scoreA,scoreB)
+        # Display scores
+        text = get_text(45, str(scoreA), WHITE)
+        screen.blit(text, (width//3,height//50))
+        text = get_text(45, str(scoreB), WHITE)
+        screen.blit(text, (2*width//3-text.get_width(),height//50))
 
         # --- Go ahead and update the screen with what we've drawn.
         pygame.display.flip()
@@ -412,7 +468,8 @@ def game():
     
     #Once we have exited the main program loop we can stop the game engine:
     pygame.quit()
-    GPIO.cleanup()
+    if RPI:
+        GPIO.cleanup()
 
 if __name__ == '__main__':
     menu()
