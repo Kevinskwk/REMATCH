@@ -51,6 +51,19 @@ https://youtu.be/wE_V6qiuwjU
 
 ### System Diagram <a name="system-diagram"></a>
 to be updated
+Electrical components are as follows: 
+- Raspebrry Pi 4B
+- 2x Arduino Nanos (Encoders)
+- 1x Arduino Uno (RGB LEDs)
+- 1x 5V Relay
+- 2x RGB LED Strips (50cm)
+- 2x White LED Strips
+- 2x 62mm Momentary push buttons
+- 4x IR Sensors modules (w/ comparitors)
+- 1x 24" Monitor
+
+
+
 
 ### Electronics <a name="electronics"></a>
 
